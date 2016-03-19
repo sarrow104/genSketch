@@ -67,6 +67,10 @@ int main (int argc, char *argv[])
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
             std::cout << sss::path::relative_to(fd.get_path(), get_command) << "/" << std::endl;
+
+            std::string out_path = sss::path::append_copy(dir,
+                                                          env.get_expr(sss::path::relative_to(fd.get_path(), get_command)));
+            sss::path::mkpath(out_path);
         }
         else if (fd.is_normal_file()) {
             env.set("timestamp", sss::time::strftime("%Y%m%d"));
@@ -94,6 +98,7 @@ int main (int argc, char *argv[])
             else {
                 ofs << content;
             }
+            sss::path::chmod(out_path, sss::path::getmod(fd.get_path()));
         }
     }
 

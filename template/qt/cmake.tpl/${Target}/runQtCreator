@@ -1,0 +1,2 @@
+#!/bin/sh
+/home/sarrow/Qt56/Tools/QtCreator/bin/qtcreator src/CMakeLists.txt &
