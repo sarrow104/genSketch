@@ -66,15 +66,13 @@ int main (int argc, char *argv[])
     sss::path::glob_path_recursive gp(get_command, fd);
     while (gp.fetch()) {
         if (fd.is_normal_dir()) {
-            std::cout << sss::path::relative_to(fd.get_path(), get_command) << "/" << std::endl;
-
             std::string out_path = sss::path::append_copy(dir,
                                                           env.get_expr(sss::path::relative_to(fd.get_path(), get_command)));
             sss::path::mkpath(out_path);
+            std::cout << sss::path::relative_to(out_path, dir) << "/" << " <- `mkdir -p`" << std::endl;
         }
         else if (fd.is_normal_file()) {
             env.set("timestamp", sss::time::strftime("%Y%m%d"));
-            std::cout << sss::path::relative_to(fd.get_path(), get_command) << std::endl;
             std::string out_path = sss::path::append_copy(dir,
                                                           env.get_expr(sss::path::relative_to(fd.get_path(), get_command)));
 
@@ -86,9 +84,11 @@ int main (int argc, char *argv[])
             }
 
             if (sss::path::file_exists(out_path)) {
-                std::cout << out_path << " already exists!" << std::endl;
+                std::cerr << out_path << " already exists!" << std::endl;
                 continue;
             }
+
+            std::cout << sss::path::relative_to(out_path, dir) << " <- " << (using_template ? "template" : "copy") << std::endl;
 
             sss::path::file2string(fd.get_path(), content);
             std::ofstream ofs(out_path.c_str(), std::ios_base::out | std::ios_base::binary);
