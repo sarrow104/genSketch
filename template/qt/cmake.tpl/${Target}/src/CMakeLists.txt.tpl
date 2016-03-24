@@ -11,6 +11,7 @@ project(${Target})
 
 find_package(Qt5 5.4 COMPONENTS Core Widgets LinguistTools)
 
+set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_AUTOMOC ON)
 set(THREADS_PREFER_PTHREAD_FLAG ON)
 
