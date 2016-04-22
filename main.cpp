@@ -59,7 +59,10 @@ int main (int argc, char *argv[])
         std::cerr << get_command << " not exists!" << std::endl;
         return EXIT_FAILURE;
     }
+
     env.set("Target", target);
+    env.set("timestamp", sss::time::strftime("%Y%m%d"));
+
     std::cout << NAME_WAPPER(get_command) << std::endl;
 
     sss::path::file_descriptor fd;
@@ -72,7 +75,6 @@ int main (int argc, char *argv[])
             std::cout << sss::path::relative_to(out_path, dir) << "/" << " <- `mkdir -p`" << std::endl;
         }
         else if (fd.is_normal_file()) {
-            env.set("timestamp", sss::time::strftime("%Y%m%d"));
             std::string out_path = sss::path::append_copy(dir,
                                                           env.get_expr(sss::path::relative_to(fd.get_path(), get_command)));
 
