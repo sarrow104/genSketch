@@ -47,3 +47,62 @@ $ genQtSketch qt/cmake project_name
 4. 替换所支持的“变量”列表：
 	- ${s.timestamp} 替换为时间戳记
 	- ${Target} 替换为 genQtSketch 的第二个参数 —— 默认为“.”，即当前路径。
+
+----------------------------------------------------------------------
+
+## 使用范例
+
+```bash
+$ genQtSketch qt/cmake qt-hello
+get_command = qt/cmake
+target = qt-hello
+dir = /home/sarrow/project/qt5
+get_command = /home/sarrow/project/genQtSketch/template/qt/cmake.tpl
+qt-hello/ <- `mkdir -p`
+qt-hello/readme.txt <- copy
+qt-hello/runQtCreator <- copy
+qt-hello/Debug/ <- `mkdir -p`
+qt-hello/Release/ <- `mkdir -p`
+qt-hello/src/ <- `mkdir -p`
+qt-hello/src/CMakeLists.txt <- template
+qt-hello/src/Makefile <- copy
+qt-hello/src/mainwindow.h <- copy
+qt-hello/src/CMakeLists.txt.user <- template
+qt-hello/src/mainwindow.cpp <- copy
+qt-hello/src/main.cpp <- copy
+```
+
+目标目录树：
+
+	qt-hello
+	├── Debug
+	├── readme.txt
+	├── Release
+	├── runQtCreator
+	└── src
+	    ├── CMakeLists.txt
+	    ├── CMakeLists.txt.user
+	    ├── main.cpp
+	    ├── mainwindow.cpp
+	    ├── mainwindow.h
+	    └── Makefile
+
+	3 directories, 8 files
+
+模板源目录树
+
+	template/qt/cmake.tpl/
+	└── ${Target}
+	    ├── Debug
+	    ├── readme.txt
+	    ├── Release
+	    ├── runQtCreator
+	    └── src
+		├── CMakeLists.txt.tpl
+		├── CMakeLists.txt.user.tpl
+		├── main.cpp
+		├── mainwindow.cpp
+		├── mainwindow.h
+		└── Makefile
+
+	4 directories, 8 files
