@@ -6,7 +6,8 @@
 #include <QMenu>
 #include <QToolBar>
 
-MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent)
+MainWindow::MainWindow(QWidget *parent) :
+    QMainWindow(parent)
 {
     this->setWindowTitle(tr("Main Window"));
 

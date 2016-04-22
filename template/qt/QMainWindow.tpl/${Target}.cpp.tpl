@@ -1,6 +1,7 @@
 #include "${Target}.h"
 
-${Target}::${Target}(QWidget *parent) : QMainWindow(parent)
+${Target}::${Target}(QWidget *parent) :
+    QMainWindow(parent)
 {
 
 }

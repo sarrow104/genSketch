@@ -1,6 +1,7 @@
 #include "${Target}.h"
 
-${Target}::${Target}(QWidget *parent) : QWidget(parent)
+${Target}::${Target}(QWidget *parent) :
+    QWidget(parent)
 {
 
 }

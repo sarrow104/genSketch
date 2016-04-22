@@ -1,6 +1,7 @@
 #include "${Target}.h"
 
-${Target}::${Target}(QPushButton *parent) : QPushButton(parent)
+${Target}::${Target}(QPushButton *parent) :
+    QPushButton(parent)
 {
     connect(this, &${Target}::clicked,
             this, &${Target}::onButtonCliecked);

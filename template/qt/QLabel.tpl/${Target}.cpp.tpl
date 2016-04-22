@@ -1,6 +1,7 @@
 #include "${Target}.h"
 
-${Target}::${Target}(QLabel *parent) : QLabel(parent)
+${Target}::${Target}(QLabel *parent) :
+    QLabel(parent)
 {
 
 }

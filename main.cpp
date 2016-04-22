@@ -51,8 +51,8 @@ int main (int argc, char *argv[])
     std::cout << NAME_WAPPER(dir) << std::endl;
 
     if (target.empty()) {
-        std::cerr << "not enough parameters!" << std::endl;
-        return EXIT_FAILURE;
+        target = '.';
+        std::cout << "using current working dir" << std::endl;
     }
     get_command = sss::path::append_copy(env.get("tmpl_dir"), get_command + ".tpl");
     if (sss::path::file_exists(get_command) != sss::PATH_TO_DIRECTORY) {

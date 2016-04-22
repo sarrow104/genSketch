@@ -7,7 +7,8 @@ ${Target}::${Target}()
     // TODO
 }
 
-${Target}::${Target}(QGraphicsItem *parent) : QGraphicsItem(parent)
+${Target}::${Target}(QGraphicsItem *parent) :
+    QGraphicsItem(parent)
 {
     // TODO
 }
