@@ -17,6 +17,38 @@
 
 #define NAME_WAPPER(a) (#a) << " = " << (a)
 
+void help_msg()
+{
+    std::string app = sss::path::basename(sss::path::getbin());
+    std::cout
+        << app << " --help\n"
+        << "\t print this message\n"
+        << std::endl;
+
+    std::cout
+        << app << " --list\n"
+        << "\t list all valid template get-command\n"
+        << std::endl;
+
+    std::cout
+        << app << " get-command [Target-name] [out-directory]\n"
+        << "\t use template project <get-command>, with <target-name>,\n"
+        << "\t apply in dir <out-directory>\n"
+        << std::endl;
+}
+
+void list_cmd(const std::string& tmpl_dir)
+{
+    sss::path::file_descriptor fd;
+    sss::path::glob_path_recursive gp(tmpl_dir, fd);
+    while (gp.fetch()) {
+        if (fd.is_normal_dir() && sss::is_end_with(fd.get_name(), ".tpl")) {
+            std::cout << sss::path::no_suffix(sss::path::relative_to(fd.get_path(), tmpl_dir)) << std::endl;
+            gp.jump();
+        }
+    }
+}
+
 int main (int argc, char *argv[])
 {
     (void) argc;
@@ -34,6 +66,17 @@ int main (int argc, char *argv[])
     int idx = 1;
 
     if (idx < argc) {
+        if (argv[idx] == std::string("--help")) {
+            help_msg();
+            return EXIT_SUCCESS;
+        }
+        else if (argv[idx] == std::string("--list")) {
+            list_cmd(env.get("tmpl_dir"));
+            return EXIT_SUCCESS;
+        }
+    }
+
+    if (idx < argc) {
         get_command = argv[idx++];
         std::cout << NAME_WAPPER(get_command) << std::endl;
     }
@@ -48,7 +91,11 @@ int main (int argc, char *argv[])
         std::cout << NAME_WAPPER(dir) << std::endl;
     }
 
-    std::cout << NAME_WAPPER(dir) << std::endl;
+    if (get_command.empty()) {
+        help_msg();
+        return EXIT_SUCCESS;
+    }
+    // std::cout << NAME_WAPPER(dir) << std::endl;
 
     if (target.empty()) {
         target = '.';
