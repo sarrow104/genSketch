@@ -31,6 +31,11 @@ void help_msg()
         << std::endl;
 
     std::cout
+        << app << " --edit command"
+        << "\t return the fullpath to specific command template path"
+        << std::endl;
+
+    std::cout
         << app << " get-command [Target-name] [out-directory]\n"
         << "\t use template project <get-command>, with <target-name>,\n"
         << "\t apply in dir <out-directory>\n"
@@ -46,6 +51,25 @@ void list_cmd(const std::string& tmpl_dir)
             std::cout << sss::path::no_suffix(sss::path::relative_to(fd.get_path(), tmpl_dir)) << std::endl;
             gp.jump();
         }
+    }
+}
+
+void edit_tpl(const std::string& tmpl_dir, const std::string& command)
+{
+    std::string full {tmpl_dir};
+    sss::path::append(full, command + ".tpl");
+    switch (sss::path::file_exists(full)) {
+    case sss::PATH_NOT_EXIST:
+        sss::path::mkdir(full);
+        // fall-throw:
+
+    case sss::PATH_TO_DIRECTORY:
+        std::cout << full;
+        break;
+
+    case sss::PATH_TO_FILE:
+        // NOTE something wrong here!
+        break;
     }
 }
 
@@ -72,6 +96,10 @@ int main (int argc, char *argv[])
         }
         else if (argv[idx] == std::string("--list")) {
             list_cmd(env.get("tmpl_dir"));
+            return EXIT_SUCCESS;
+        }
+        else if (idx + 1 < argc && argv[idx] == std::string("--edit")) {
+            edit_tpl(env.get("tmpl_dir"), argv[idx + 1]);
             return EXIT_SUCCESS;
         }
     }
