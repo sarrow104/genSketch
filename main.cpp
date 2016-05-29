@@ -123,10 +123,12 @@ int main (int argc, char *argv[])
         help_msg();
         return EXIT_SUCCESS;
     }
-    // std::cout << NAME_WAPPER(dir) << std::endl;
 
     if (target.empty()) {
         target = '.';
+    }
+    if (target == ".") {
+        target = sss::path::basename(sss::path::getcwd());
         std::cout << "using current working dir" << std::endl;
     }
     get_command = sss::path::append_copy(env.get("tmpl_dir"), get_command + ".tpl");
