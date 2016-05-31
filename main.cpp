@@ -36,9 +36,10 @@ void help_msg()
         << std::endl;
 
     std::cout
-        << app << " get-command [Target-name] [out-directory]\n"
+        << app << " get-command [Target-name] [out-directory] [-Denvirable=value]*\n"
         << "\t use template project <get-command>, with <target-name>,\n"
         << "\t apply in dir <out-directory>\n"
+        << "\t you can add any numbers of -Dxxx=yyyy style parameters to shell script"
         << std::endl;
 }
 
@@ -104,19 +105,26 @@ int main (int argc, char *argv[])
         }
     }
 
-    if (idx < argc) {
-        get_command = argv[idx++];
-        std::cout << NAME_WAPPER(get_command) << std::endl;
-    }
-
-    if (idx < argc) {
-        target = argv[idx++];
-        std::cout << NAME_WAPPER(target) << std::endl;
-    }
-
-    if (idx < argc) {
-        dir = sss::path::full_of_copy(argv[idx++]);
-        std::cout << NAME_WAPPER(dir) << std::endl;
+    while (idx < argc) {
+        if (sss::is_begin_with(argv[idx], "-D") && sss::is_has(argv[idx], "=")) {
+            char * eq_pos = std::strchr(argv[idx] + 2, '=');
+            std::string key(argv[idx] + 2, std::distance(argv[idx] + 2, eq_pos));
+            std::string value(eq_pos + 1);
+            env.set(key, value);
+            ++idx;
+        }
+        else if (get_command.empty()) {
+            get_command = argv[idx++];
+            std::cout << NAME_WAPPER(get_command) << std::endl;
+        }
+        else if (target.empty()) {
+            target = argv[idx++];
+            std::cout << NAME_WAPPER(target) << std::endl;
+        }
+        else if (dir.empty()) {
+            dir = sss::path::full_of_copy(argv[idx++]);
+            std::cout << NAME_WAPPER(dir) << std::endl;
+        }
     }
 
     if (get_command.empty()) {
@@ -172,7 +180,9 @@ int main (int argc, char *argv[])
             sss::path::file2string(fd.get_path(), content);
             std::ofstream ofs(out_path.c_str(), std::ios_base::out | std::ios_base::binary);
             if (using_template) {
+                env.set_shellscript_workdir(sss::path::dirname(out_path));
                 ofs << env.get_expr(content);
+                env.unset_shellscript_workdir();
             }
             else {
                 ofs << content;

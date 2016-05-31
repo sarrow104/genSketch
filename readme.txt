@@ -291,3 +291,4 @@ http://www.cnblogs.com/alex-blog/articles/2704214.html
 只能通过前缀来查找，那么死定了，得把人找死！
 
 所以，暂时靠谱的办法，还是多定义模板吧！
+
