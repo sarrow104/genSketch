@@ -1,0 +1,8 @@
+99 ${Target}/readme.txt
+2 ${Target}/runQtCreator
+3 ${Target}/src/CMakeLists.txt.tpl
+4 ${Target}/src/Makefile
+5 ${Target}/src/mainwindow.h
+6 ${Target}/src/CMakeLists.txt.user.tpl
+7 ${Target}/src/mainwindow.cpp
+8 ${Target}/src/main.cpp
