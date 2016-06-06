@@ -1,0 +1,2 @@
+98 ./${Target}/src/${Target}.pro.tpl
+99 ./${Target}/src/${Target}.pro.user.tpl
