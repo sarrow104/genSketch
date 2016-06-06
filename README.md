@@ -137,25 +137,27 @@ qt-hello/src/main.cpp <- copy
 
 $genSketch/template/qt/qtcreator.tpl/.tpl.config.ini
 
-> ; 给PenvMgr2脚本环境，提供的变量
-> [env-variable]
-> project_name=${Target}
-> cwd=$s.cwd
-> debug_dir=${t.(`relpath $src_dir $cwd/Debug`)}
-> release_dir=${t.(`relpath $src_dir $cwd/Release`)}
-> src_dir=$cwd/src
-> pro_path=${t.(`relpath $src_dir $src_dir/$project_name.pro`)}
-> pro_user_path=$pro_path.user
-> qt_version1=5
-> qt_version2=6
-> qt_version3=0
-> qt_version=${qt_version1}.${qt_version2}.${qt_version3}
-> qt_version_short=${qt_version1}${qt_version2}
-> 
-> ; 特定执行的脚本；可以呼叫应用程序
-> [scripts]
-> before-script=
-> after-script=
+```dosini
+; 给PenvMgr2脚本环境，提供的变量
+[env-variable]
+project_name=${Target}
+cwd=$s.cwd
+debug_dir=${t.(`relpath $src_dir $cwd/Debug`)}
+release_dir=${t.(`relpath $src_dir $cwd/Release`)}
+src_dir=$cwd/src
+pro_path=${t.(`relpath $src_dir $src_dir/$project_name.pro`)}
+pro_user_path=$pro_path.user
+qt_version1=5
+qt_version2=6
+qt_version3=0
+qt_version=${qt_version1}.${qt_version2}.${qt_version3}
+qt_version_short=${qt_version1}${qt_version2}
+
+; 特定执行的脚本；可以呼叫应用程序
+[scripts]
+before-script=
+after-script=
+```
 
 两种自定义变量的优先级？
 
@@ -187,7 +189,7 @@ $genSketch/template/qt/qtcreator.tpl/.tpl.config.ini
 
 参考： $genQtSketch/template/qt/qtcreator.tpl/.tpl.order.txt
 
-> 98 ./${Target}/src/${Target}.pro.tpl
+> 98 ./${Target}/src/${Target}.pro.tpl   
 > 99 ./${Target}/src/${Target}.pro.user.tpl
 
 模板文件夹中，默认的优先级是50；.tpl.order.txt文件中，按照 “优先级数字 空格 相对路径名” 的方式来设定优先级。
