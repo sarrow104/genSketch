@@ -8,7 +8,7 @@
 
 使用vim编写qt项目是一个麻烦的事情——你需要成对地创建头文件、和实现文件，并且继承自特定的qt类；若仅使用vim的话，比较浪费时间，于是需要一个通用一点的工具。
 
-于是，我编写了genQtSketch工具。
+于是，我编写了genSketch工具。
 
 后来，发现这个工具，可以和qt没啥关系，于是干脆改名为genSketch。
 
@@ -16,19 +16,19 @@
 
 ## 使用方法
 
-说白了，就是为你想自动生成的文件，或者“工程”，创建模板。模板定位于 `$genQtSKetch/template` 文件夹下。
+说白了，就是为你想自动生成的文件，或者“工程”，创建模板。模板定位于 `$genSKetch/template` 文件夹下。
 
 形如：
 
 ```bash
-$ genQtSketch qt/cmake project_name
+$ genSketch qt/cmake project_name
 ```
 
-这样的调用，就会使用 `$genQtSKetch/template/qt/cmake.tpl/` 这个模板——注意，模板，都是以文件夹为单位，分开管理的。并且，该目录名，必须以`.tpl`为结尾。
+这样的调用，就会使用 `$genSKetch/template/qt/cmake.tpl/` 这个模板——注意，模板，都是以文件夹为单位，分开管理的。并且，该目录名，必须以`.tpl`为结尾。
 
 第二个参数 `project_name` 是你将要在当前工作目录下，生成新文件夹的名字——同时，也是“工程名”；
 
-之后，genQtSketch工具，就会开始应用一定的规则，在该新建的文件夹下，原样生成各种文件（夹）——文件的属性，也会原样复制。
+之后，genSketch工具，就会开始应用一定的规则，在该新建的文件夹下，原样生成各种文件（夹）——文件的属性，也会原样复制。
 
 该处理动作是递归进行的。相当于原样生成目录树。
 
@@ -46,14 +46,14 @@ $ genQtSketch qt/cmake project_name
 
 4. 替换所支持的“变量”列表：
 	- ${s.timestamp} 替换为时间戳记
-	- ${Target} 替换为 genQtSketch 的第二个参数 —— 默认为“.”，即当前路径。
+	- ${Target} 替换为 genSketch 的第二个参数 —— 默认为“.”，即当前路径。
 
 ----------------------------------------------------------------------
 
 ## 使用范例
 
 ```bash
-$ genQtSketch qt/cmake qt-hello
+$ genSketch qt/cmake qt-hello
 get_command = qt/cmake
 target = qt-hello
 dir = /home/sarrow/project/qt5
@@ -74,6 +74,7 @@ qt-hello/src/main.cpp <- copy
 
 目标目录树：
 
+```
 	qt-hello
 	├── Debug
 	├── readme.txt
@@ -88,9 +89,11 @@ qt-hello/src/main.cpp <- copy
 	    └── Makefile
 
 	3 directories, 8 files
+```
 
 模板源目录树
 
+```
 	template/qt/cmake.tpl/
 	└── ${Target}
 	    ├── Debug
@@ -106,3 +109,4 @@ qt-hello/src/main.cpp <- copy
 		└── Makefile
 
 	4 directories, 8 files
+```
