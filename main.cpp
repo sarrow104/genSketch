@@ -146,6 +146,15 @@ void help_tpl(const std::string& tmpl_dir, const std::string& command)
 {
     std::string full {tmpl_dir};
     sss::path::append(full, command + ".tpl");
+    if (sss::path::file_exists(full) != sss::PATH_TO_DIRECTORY) {
+        std::cout
+            << sss::Terminal::error
+            << "# ERROR #\n"
+            << "command `" << command << "` not exists!"
+            << sss::Terminal::end
+            << std::endl;
+        return;
+    }
     sss::path::append(full, tpl_help_name);
     if (sss::path::filereadable(full)) {
         std::string content;
