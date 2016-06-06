@@ -9,6 +9,7 @@
 #include <sss/log.hpp>
 #include <sss/Terminal.hpp>
 #include <sss/regex/cregex.hpp>
+#include <sss/dosini/dosini.hpp>
 
 #include <sss/util/PostionThrow.hpp>
 
@@ -20,9 +21,9 @@
 
 #define VALUE_MSG(a) (#a) << " = " << (a)
 
-const std::string tpl_help_name = ".tpl.help";
-const std::string tpl_conf_name = ".tpl.config";
-const std::string tpl_order_name = ".tpl.order";
+const std::string tpl_help_name = ".tpl.help.md";
+const std::string tpl_conf_name = ".tpl.config.ini";
+const std::string tpl_order_name = ".tpl.order.txt";
 
 class order_t {
     uint32_t m_high;
@@ -104,13 +105,31 @@ void list_cmd(const std::string& tmpl_dir)
     }
 }
 
+void genTplFile(const std::string& bin_dir, const std::string& name, const std::string& out_dir)
+{
+    std::string src_path = sss::path::append_copy(bin_dir, name);
+    std::string tar_path = sss::path::append_copy(out_dir, name);
+    if (sss::path::filereadable(src_path)) {
+        sss::path::copy(src_path, tar_path);
+    }
+    else {
+        sss::fs::touch(tar_path);
+    }
+}
+
 void edit_tpl(const std::string& tmpl_dir, const std::string& command)
 {
     std::string full {tmpl_dir};
     sss::path::append(full, command + ".tpl");
     switch (sss::path::file_exists(full)) {
     case sss::PATH_NOT_EXIST:
-        sss::path::mkdir(full);
+        sss::path::mkpath(full);
+        {
+            std::string bin_dir = sss::path::dirname(sss::path::getbin());
+            genTplFile(bin_dir, tpl_conf_name, full);
+            genTplFile(bin_dir, tpl_help_name, full);
+            genTplFile(bin_dir, tpl_order_name, full);
+        }
         // fall-throw:
 
     case sss::PATH_TO_DIRECTORY:
@@ -145,6 +164,120 @@ void help_tpl(const std::string& tmpl_dir, const std::string& command)
     }
 }
 
+// std::vector<std::pair<std::string, order_t> > sorted_tpl_path;
+void load_sorted_templates(const std::string& get_command,
+                           std::vector<std::pair<std::string, order_t> >& sorted_tpl_path)
+{
+    // TODO
+    // read_config!
+    // 1. 将.tpl所有文件，检索出来，并导出为外部序列；
+    // 2. 应用 .tpl.config 的优先级描述；对序列重新排序；
+    // 3. 逐个使用模板规则，创建文件；
+    std::map<std::string, order_t> tpl_files;
+    {
+        sss::path::file_descriptor fd;
+        sss::path::glob_path_recursive gp(get_command, fd);
+        uint32_t low_order = 0;
+        while (gp.fetch()) {
+            std::string rel_path;
+            if (fd.is_normal_file()) {
+                if (fd.get_name() == tpl_conf_name ||
+                    fd.get_name() == tpl_help_name ||
+                    fd.get_name() == tpl_order_name)
+                {
+                    continue;
+                }
+                rel_path = sss::path::relative_to(fd.get_path(), get_command);
+            }
+            else if (fd.is_normal_dir()) {
+                rel_path = sss::path::relative_to(fd.get_path(), get_command) + sss::path::sp_char;
+            }
+            else {
+                continue;
+            }
+            // 默认优先级
+            tpl_files[rel_path] = order_t(50, low_order++);
+        }
+    }
+
+    std::string order_file_path = sss::path::append_copy(get_command, tpl_order_name);
+    if (sss::path::filereadable(order_file_path)) {
+        std::cout << VALUE_MSG(order_file_path) << std::endl;
+        std::ifstream order_file(order_file_path);
+        std::string line;
+        sss::regex::CRegex reg_order(R"(^0*([0-9]+)\s+(.+)$)");
+        // NOTE FIXME 如果文件名，就是数字，如何处理？
+        sss::regex::CRegex reg_name(R"(^\s*(.+)\s*$)");
+        uint32_t low_order = 0;
+        while (std::getline(order_file, line)) {
+            uint32_t high_order = 50;
+            std::string rel_path;
+            if (reg_order.match(line)) {
+                high_order = sss::string_cast<int>(reg_order.submatch(1));
+                rel_path = sss::path::simplify_copy(reg_order.submatch(2));
+            }
+            else if (reg_name.match(line)) {
+                rel_path = sss::path::simplify_copy(reg_order.submatch(1));
+            }
+            else {
+                continue;
+            }
+            order_t order = order_t(high_order, low_order++);
+            // std::cout << order << " = " << rel_path << std::endl;
+            if (tpl_files.find(rel_path) == tpl_files.end()) {
+                std::cout
+                    << sss::Terminal::error
+                    << "order setting file\n"
+                    << "\t" << rel_path << " is not exists!"
+                    << sss::Terminal::end
+                    << std::endl;
+                continue;
+            }
+            tpl_files[rel_path] = order;
+        }
+    }
+
+    std::vector<std::pair<std::string, order_t> > sorted_tpl_path_tmp;
+    std::copy(tpl_files.begin(), tpl_files.end(), std::back_inserter(sorted_tpl_path_tmp));
+    std::sort(sorted_tpl_path_tmp.begin(), sorted_tpl_path_tmp.end(),
+              [=](const std::pair<std::string, order_t>& lhs,
+                  const std::pair<std::string, order_t>& rhs)->bool {
+                  return lhs.second < rhs.second;
+              });
+    std::swap(sorted_tpl_path_tmp, sorted_tpl_path);
+}
+
+void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env)
+{
+    std::string conf_path = get_command;
+    sss::path::append(conf_path, tpl_conf_name);
+    if (sss::path::filereadable(conf_path)) {
+        std::cout << VALUE_MSG(conf_path) << std::endl;
+        sss::dosini penvIni(conf_path);
+
+        const sss::dosini::section_t& sec_var = penvIni.section("env-variable");
+        for (const auto & item : sec_var) {
+            std::cout
+                << item.first << "=" << item.second.get()
+                << std::endl;
+            env.set(item.first, item.second.get());
+        }
+        std::cout << std::endl;
+    }
+}
+
+void gensketch_mkpath(const std::string& out_path, const std::string& msg_path, const order_t& order)
+{
+    if (sss::path::file_exists(out_path) == sss::PATH_NOT_EXIST) {
+        if (!sss::path::mkpath(out_path)) {
+            std::ostringstream oss;
+            oss << "failed mkdir " << out_path;
+            throw std::runtime_error(oss.str());
+        }
+        std::cout << order << " " << msg_path << "/" << " <- `mkdir -p`" << std::endl;
+    }
+}
+
 int main (int argc, char *argv[])
 {
     try {
@@ -159,6 +292,7 @@ int main (int argc, char *argv[])
         std::string get_command;
         std::string target;
         std::string dir = sss::path::getcwd();
+        std::map<std::string, std::string> cml_env_variables;
 
         int idx = 1;
 
@@ -188,7 +322,8 @@ int main (int argc, char *argv[])
                 char * eq_pos = std::strchr(argv[idx] + 2, '=');
                 std::string key(argv[idx] + 2, std::distance(argv[idx] + 2, eq_pos));
                 std::string value(eq_pos + 1);
-                env.set(key, value);
+                cml_env_variables[key] = value;
+                // env.set(key, value);
                 ++idx;
             }
             else if (get_command.empty()) {
@@ -228,78 +363,23 @@ int main (int argc, char *argv[])
 
         std::cout << VALUE_MSG(get_command) << std::endl;
 
-        // TODO
-        // read_config!
-        // 1. 将.tpl所有文件，检索出来，并导出为外部序列；
-        // 2. 应用 .tpl.config 的优先级描述；对序列重新排序；
-        // 3. 逐个使用模板规则，创建文件；
-        std::map<std::string, order_t> tpl_files;
-        {
-            sss::path::file_descriptor fd;
-            sss::path::glob_path_recursive gp(get_command, fd);
-            uint32_t low_order = 0;
-            while (gp.fetch()) {
-                if (fd.is_normal_file()) {
-                    if (fd.get_name() == tpl_conf_name ||
-                        fd.get_name() == tpl_help_name ||
-                        fd.get_name() == tpl_order_name)
-                    {
-                        continue;
-                    }
-                    // 默认优先级
-                    tpl_files[sss::path::relative_to(fd.get_path(), get_command)] = order_t(50, low_order++);
-                }
-            }
-        }
-        std::string order_file_path = sss::path::append_copy(get_command, tpl_order_name);
-        std::cout << VALUE_MSG(order_file_path) << std::endl;
-        if (sss::path::filereadable(order_file_path)) {
-            std::ifstream order_file(order_file_path);
-            std::string line;
-            sss::regex::CRegex reg_order(R"(^0*([0-9])+\s+(.+)$)");
-            // NOTE FIXME 如果文件名，就是数字，如何处理？
-            sss::regex::CRegex reg_name(R"(^\s*(.+)\s*$)");
-            uint32_t low_order = 0;
-            while (std::getline(order_file, line)) {
-                uint32_t high_order = 50;
-                std::string rel_path;
-                if (reg_order.match(line)) {
-                    high_order = sss::string_cast<int>(reg_order.submatch(1));
-                    rel_path = sss::path::simplify_copy(reg_order.submatch(2));
-                }
-                else if (reg_name.match(line)) {
-                    rel_path = sss::path::simplify_copy(reg_order.submatch(1));
-                }
-                else {
-                    continue;
-                }
-                order_t order = order_t(high_order, low_order++);
-                // std::cout << order << " = " << rel_path << std::endl;
-                if (tpl_files.find(rel_path) == tpl_files.end()) {
-                    std::cout
-                        << sss::Terminal::error
-                        << "order setting file\n"
-                        << "\t" << rel_path << " is not exists!"
-                        << sss::Terminal::end
-                        << std::endl;
-                    continue;
-                }
-                tpl_files[rel_path] = order;
-            }
-        }
-
         std::vector<std::pair<std::string, order_t> > sorted_tpl_path;
-        std::copy(tpl_files.begin(), tpl_files.end(), std::back_inserter(sorted_tpl_path));
-        std::sort(sorted_tpl_path.begin(), sorted_tpl_path.end(),
-                  [=](const std::pair<std::string, order_t>& lhs,
-                      const std::pair<std::string, order_t>& rhs)->bool {
-                      return lhs.second < rhs.second;
-                  });
+        load_sorted_templates(get_command, sorted_tpl_path);
+        load_conf_variables(get_command, env);
+        for (const auto & i : cml_env_variables) {
+            env.set(i.first, i.second);
+        }
 
         for (const auto & i : sorted_tpl_path) {
             std::string out_path = sss::path::append_copy(dir,
                                                           env.get_expr(i.first));
 
+            std::string target_rel_path = sss::path::relative_to(out_path, dir);
+
+            if (*i.first.rbegin() == sss::path::sp_char) {
+                gensketch_mkpath(out_path, target_rel_path, i.second);
+                continue;
+            }
             std::string content;
             bool using_template = false;
             if (sss::path::suffix(out_path) == ".tpl") {
@@ -315,16 +395,8 @@ int main (int argc, char *argv[])
                 std::cerr << out_path << " already exists!" << std::endl;
                 continue;
             }
-            std::string target_rel_path = sss::path::relative_to(out_path, dir);
 
-            if (sss::path::file_exists(sss::path::dirname(out_path)) == sss::PATH_NOT_EXIST) {
-                if (!sss::path::mkpath(sss::path::dirname(out_path))) {
-                    std::ostringstream oss;
-                    oss << "failed mkdir " << sss::path::dirname(out_path);
-                    throw std::runtime_error(oss.str());
-                }
-                std::cout << i.second << " " << sss::path::dirname(target_rel_path) << "/" << " <- `mkdir -p`" << std::endl;
-            }
+            gensketch_mkpath(sss::path::dirname(out_path), sss::path::dirname(target_rel_path), i.second);
 
             std::cout << i.second << " " << target_rel_path << " <- " << (using_template ? "template" : "copy") << std::endl;
 
