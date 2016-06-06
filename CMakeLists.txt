@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.6)
 add_definitions(-std=c++11)
 add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors)
 
-set(target_name "genQtSketch")
+set(target_name "genSketch")
 if ("${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 	add_definitions(-DNODEBUG -O2 -s)
 else()
