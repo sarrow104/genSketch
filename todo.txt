@@ -123,6 +123,10 @@ xxx.tpl/
 
 另外，如果子目录中出现了.tpl.help，.tpl.config这种文件，忽略之！
 
+----------------------------------------------------------------------
+
+FIXME 注意，文件夹需要单独处理——理论上，文件夹没有优先级……比如空的Debug
+
 ** 模板引用问题
 
 date:2016-06-04
@@ -147,6 +151,35 @@ date:2016-06-04
 ** 将 genQtProject功能迁移过来
 
 （补template）
+
+注意，genQtProject 有一个特性，是替换xxx.pro.user的时候，将内部用到的绝对路径，
+替换为相对路径——相对输出路径而言；见：
+
+/home/sarrow/project/genQtProject/main.cpp|69
+
+这样的话，我这个 genSketch还有些难处理。
+
+比较讨巧的办法是，使用命令行工具，创建一个相对路径的输出工具。然后，将这个计算，
+提前到 .tpl.config 文件中。
+
+在网上找了一下，最简单的办法是：
+
+trackback:http://stackoverflow.com/questions/2564634/convert-absolute-path-into-relative-path-given-a-current-directory-using-bash
+
+Using realpath 8.23 on Linux 3.18 is the simplest, I think:
+
+$ realpath --relative-to="$file1" "$file2"
+
+For example:
+
+$ realpath --relative-to=/usr/bin/nmap /tmp/testing
+../../../tmp/testing
+
+对于ubuntu来说，sudo apt-get install realpath 即可！
+
+----------------------------------------------------------------------
+
+额，实测，realpath 版本不符！最后是手写了一个 relpath的小程序来完成任务。
 
 ----------------------------------------------------------------------
 
