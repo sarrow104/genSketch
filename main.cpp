@@ -142,6 +142,41 @@ void edit_tpl(const std::string& tmpl_dir, const std::string& command)
     }
 }
 
+void edit_tpl(const std::string& tmpl_dir, const std::string& command, const std::string& refer_command)
+{
+    std::string tar = sss::path::append_copy(tmpl_dir, command + ".tpl");
+    std::string src = sss::path::append_copy(tmpl_dir, refer_command + ".tpl");
+
+    if (sss::path::file_exists(tar) != sss::PATH_NOT_EXIST) {
+        if (sss::path::file_exists(tar) == sss::PATH_TO_DIRECTORY) {
+            std::cout << tar;
+            return;
+        }
+        std::cout
+            << command << " already exists!"
+            << std::endl;
+        return;
+    }
+    if (sss::path::file_exists(src) != sss::PATH_TO_DIRECTORY) {
+        std::cout
+            << refer_command << " not exists!"
+            << std::endl;
+        return;
+    }
+    if (sss::path::file_exists(sss::path::dirname(tar)) == sss::PATH_NOT_EXIST) {
+        sss::path::mkpath(sss::path::dirname(tar));
+    }
+    if (sss::path::file_exists(sss::path::dirname(tar)) == sss::PATH_TO_DIRECTORY) {
+        sss::path::copy_dir(src, tar);
+    }
+    else {
+        std::cout
+            << command << " can not be created!"
+            << std::endl;
+        return;
+    }
+}
+
 void help_tpl(const std::string& tmpl_dir, const std::string& command)
 {
     std::string full {tmpl_dir};
@@ -256,7 +291,7 @@ void load_sorted_templates(const std::string& get_command,
     std::swap(sorted_tpl_path_tmp, sorted_tpl_path);
 }
 
-void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env)
+void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env, std::string& before_script, std::string& after_script)
 {
     std::string conf_path = get_command;
     sss::path::append(conf_path, tpl_conf_name);
@@ -264,6 +299,9 @@ void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env)
         std::cout << VALUE_MSG(conf_path) << std::endl;
         sss::dosini penvIni(conf_path);
 
+        // 同名变量，只能有唯一定义式；
+        // 如果ini配置中，出现同名定义式，以最后一个出现的定义式，为该名称变量的定义！
+        // 这是可以由sss::dosini的顺序解析来决定的！
         const sss::dosini::section_t& sec_var = penvIni.section("env-variable");
         for (const auto & item : sec_var) {
             std::cout
@@ -272,7 +310,17 @@ void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env)
             env.set(item.first, item.second.get());
         }
         std::cout << std::endl;
+        penvIni.get("scripts", "before-script", before_script);
+        penvIni.get("scripts", "after-script", after_script);
     }
+}
+
+void gensketch_execute_script(sss::PenvMgr2& env, const std::string& script)
+{
+    if (script.empty()) {
+        return;
+    }
+    (void)env.get_expr("${t.(`" + script + "`)}");
 }
 
 void gensketch_mkpath(const std::string& out_path, const std::string& msg_path, const order_t& order)
@@ -320,9 +368,15 @@ int main (int argc, char *argv[])
                 list_cmd(env.get("tmpl_dir"));
                 return EXIT_SUCCESS;
             }
-            else if (idx + 1 < argc && argv[idx] == std::string("--edit")) {
-                edit_tpl(env.get("tmpl_dir"), argv[idx + 1]);
-                return EXIT_SUCCESS;
+            else if (argv[idx] == std::string("--edit")) {
+                if (idx + 2 < argc) {
+                    edit_tpl(env.get("tmpl_dir"), argv[idx + 1], argv[idx + 2]);
+                    return EXIT_SUCCESS;
+                }
+                else if (idx + 1 < argc) {
+                    edit_tpl(env.get("tmpl_dir"), argv[idx + 1]);
+                    return EXIT_SUCCESS;
+                }
             }
         }
 
@@ -374,10 +428,20 @@ int main (int argc, char *argv[])
 
         std::vector<std::pair<std::string, order_t> > sorted_tpl_path;
         load_sorted_templates(get_command, sorted_tpl_path);
-        load_conf_variables(get_command, env);
+        std::string before_script;
+        std::string after_script;
+        load_conf_variables(get_command, env, before_script, after_script);
         for (const auto & i : cml_env_variables) {
             env.set(i.first, i.second);
         }
+
+        // NOTE before-script 和 after-script的执行；
+        // 脚本文本中，我也允许含有$变量；
+        // 问题来了。如何同时处理PenvMgr2变量，以及os的环境变量呢？
+        // 直接get_expr()，肯定不行；虽然PenvMgr2可以调用os.env，但是需要特定的语法。
+        // $s.env_name；所以，唯一可行的办法是，将其包装为${t.(``)}变量，再get_expr()；
+        // 同时，忽略其执行结果。
+        gensketch_execute_script(env, before_script);
 
         for (const auto & i : sorted_tpl_path) {
             std::string out_path = sss::path::append_copy(dir,
@@ -427,6 +491,8 @@ int main (int argc, char *argv[])
             }
             sss::path::chmod(out_path, sss::path::getmod(tpl_path));
         }
+
+        gensketch_execute_script(env, after_script);
 
         return EXIT_SUCCESS;
     }
