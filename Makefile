@@ -1,13 +1,24 @@
 .PHONY: all release debug clean install clean-debug clean-release
 
+CMAKE_FLAGS=
+
+ifeq ($(OS),Windows_NT)
+	ifeq ($(TERM),xterm)
+	    CMAKE_FLAGS= -G"MSYS Makefiles"
+    endif
+	ifeq ($(TERM),cygwin)
+	    CMAKE_FLAGS= -G"MSYS Makefiles"
+    endif
+endif
+
 all: release
 release:
 	@mkdir -p Release
-	cd Release && cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/bin .. && make
+	cd Release && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/bin .. && make
 
 debug:
 	@mkdir -p Debug
-	@cd Debug && cmake -DCMAKE_BUILD_TYPE=Debug .. && make
+	@cd Debug && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug .. && make
 
 install:
 	@cd Release && make install
