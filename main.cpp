@@ -380,6 +380,8 @@ int main (int argc, char *argv[])
             }
         }
 
+        std::vector<std::string> args4Penv;
+
         while (idx < argc) {
             if (sss::is_begin_with(argv[idx], "-D") && sss::is_has(argv[idx], "=")) {
                 char * eq_pos = std::strchr(argv[idx] + 2, '=');
@@ -388,19 +390,27 @@ int main (int argc, char *argv[])
                 cml_env_variables[key] = value;
                 // env.set(key, value);
                 ++idx;
+                continue;
             }
-            else if (get_command.empty()) {
-                get_command = argv[idx++];
+
+            if (get_command.empty()) {
+                get_command = argv[idx];
                 std::cout << VALUE_MSG(get_command) << std::endl;
             }
             else if (target.empty()) {
-                target = argv[idx++];
+                target = argv[idx];
                 std::cout << VALUE_MSG(target) << std::endl;
             }
             else if (dir.empty()) {
-                dir = sss::path::full_of_copy(argv[idx++]);
+                dir = sss::path::full_of_copy(argv[idx]);
                 std::cout << VALUE_MSG(dir) << std::endl;
             }
+            args4Penv.push_back(argv[idx++]);
+        }
+
+        env.set("ARG_COUNT", sss::cast_string(args4Penv.size()));
+        for (size_t i = 0; i < args4Penv.size(); ++i) {
+            env.set("ARGV_" + sss::cast_string(i), args4Penv[i]);
         }
 
         if (get_command.empty()) {
@@ -409,7 +419,7 @@ int main (int argc, char *argv[])
         }
 
         if (target.empty()) {
-            target = '.';
+            target = ".";
         }
         if (target == ".") {
             target = sss::path::basename(sss::path::getcwd());
