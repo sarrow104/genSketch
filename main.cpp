@@ -1,5 +1,6 @@
 #include <sss/path/glob_path.hpp>
 #include <sss/path/glob_path_recursive.hpp>
+#include <sss/bit_operation/bit_operation.h>
 #include <sss/utlstring.hpp>
 #include <sss/ps.hpp>
 #include <sss/path.hpp>
@@ -10,8 +11,10 @@
 #include <sss/Terminal.hpp>
 #include <sss/regex/cregex.hpp>
 #include <sss/dosini/dosini.hpp>
+#include <sss/environ.hpp>
 
 #include <sss/util/PostionThrow.hpp>
+#include <sss/cygpath.hpp>
 
 #include <algorithm>
 #include <iterator>
@@ -20,6 +23,30 @@
 #include <iostream>
 
 #define VALUE_MSG(a) (#a) << " = " << (a)
+
+bool is_fake_shell()
+{
+#ifdef __WIN32__
+    static bool is_fake = sss::is_equal(sss::env::get("TERM"), std::string("xterm"));
+    return is_fake;
+#else
+    return false;
+#endif
+}
+
+void path_win2mixed_if(std::string& path)
+{
+    if (::is_fake_shell()) {
+        sss::replace_all(path, "\\", "/");
+    }
+}
+
+void path_mixed2win_if(std::string& path)
+{
+    if (::is_fake_shell()) {
+        sss::replace_all(path, "/", "\\");
+    }
+}
 
 const std::string tpl_help_name = ".tpl.help.md";
 const std::string tpl_conf_name = ".tpl.config.ini";
@@ -99,7 +126,9 @@ void list_cmd(const std::string& tmpl_dir)
     sss::path::glob_path_recursive gp(tmpl_dir, fd);
     while (gp.fetch()) {
         if (fd.is_normal_dir() && sss::is_end_with(fd.get_name(), ".tpl")) {
-            std::cout << sss::path::no_suffix(sss::path::relative_to(fd.get_path(), tmpl_dir)) << std::endl;
+            std::string command = sss::path::no_suffix(sss::path::relative_to(fd.get_path(), tmpl_dir));
+            path_win2mixed_if(command);
+            std::cout << command << std::endl;
             gp.jump();
         }
     }
@@ -258,10 +287,14 @@ void load_sorted_templates(const std::string& get_command,
             std::string rel_path;
             if (reg_order.match(line)) {
                 high_order = sss::string_cast<int>(reg_order.submatch(1));
-                rel_path = sss::path::simplify_copy(reg_order.submatch(2));
+                rel_path = reg_order.submatch(2);
+                path_mixed2win_if(rel_path);
+                rel_path = sss::path::simplify(rel_path);
             }
             else if (reg_name.match(line)) {
-                rel_path = sss::path::simplify_copy(reg_order.submatch(1));
+                rel_path = reg_order.submatch(1);
+                path_mixed2win_if(rel_path);
+                sss::path::simplify(rel_path);
             }
             else {
                 continue;
@@ -295,24 +328,27 @@ void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env, std
 {
     std::string conf_path = get_command;
     sss::path::append(conf_path, tpl_conf_name);
-    if (sss::path::filereadable(conf_path)) {
-        std::cout << VALUE_MSG(conf_path) << std::endl;
-        sss::dosini penvIni(conf_path);
-
-        // 同名变量，只能有唯一定义式；
-        // 如果ini配置中，出现同名定义式，以最后一个出现的定义式，为该名称变量的定义！
-        // 这是可以由sss::dosini的顺序解析来决定的！
-        const sss::dosini::section_t& sec_var = penvIni.section("env-variable");
-        for (const auto & item : sec_var) {
-            std::cout
-                << item.first << "=" << item.second.get()
-                << std::endl;
-            env.set(item.first, item.second.get());
-        }
-        std::cout << std::endl;
-        penvIni.get("scripts", "before-script", before_script);
-        penvIni.get("scripts", "after-script", after_script);
+    if (!sss::path::filereadable(conf_path)) {
+        std::cout << "read conf file faild: `" << conf_path << "`" << std::endl;
+        return;
     }
+
+    std::cout << VALUE_MSG(conf_path) << std::endl;
+    sss::dosini penvIni(conf_path);
+
+    // 同名变量，只能有唯一定义式；
+    // 如果ini配置中，出现同名定义式，以最后一个出现的定义式，为该名称变量的定义！
+    // 这是可以由sss::dosini的顺序解析来决定的！
+    const sss::dosini::section_t& sec_var = penvIni.section("env-variable");
+    for (const auto & item : sec_var) {
+        std::cout
+            << item.first << "=" << item.second.get()
+            << std::endl;
+        env.set(item.first, item.second.get());
+    }
+    std::cout << std::endl;
+    penvIni.get("scripts", "before-script", before_script);
+    penvIni.get("scripts", "after-script", after_script);
 }
 
 void gensketch_execute_script(sss::PenvMgr2& env, const std::string& script)
@@ -331,7 +367,7 @@ void gensketch_mkpath(const std::string& out_path, const std::string& msg_path, 
             oss << "failed mkdir " << out_path;
             throw std::runtime_error(oss.str());
         }
-        std::cout << order << " " << msg_path << "/" << " <- `mkdir -p`" << std::endl;
+        std::cout << order << " " << msg_path << sss::path::sp_char << " <- `mkdir -p`" << std::endl;
     }
 }
 
@@ -388,7 +424,6 @@ int main (int argc, char *argv[])
                 std::string key(argv[idx] + 2, std::distance(argv[idx] + 2, eq_pos));
                 std::string value(eq_pos + 1);
                 cml_env_variables[key] = value;
-                // env.set(key, value);
                 ++idx;
                 continue;
             }
@@ -499,7 +534,9 @@ int main (int argc, char *argv[])
             else {
                 ofs << content;
             }
+#ifndef __WIN32__
             sss::path::chmod(out_path, sss::path::getmod(tpl_path));
+#endif
         }
 
         gensketch_execute_script(env, after_script);
