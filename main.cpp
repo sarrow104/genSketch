@@ -324,7 +324,12 @@ void load_sorted_templates(const std::string& get_command,
     std::swap(sorted_tpl_path_tmp, sorted_tpl_path);
 }
 
-void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env, std::string& before_script, std::string& after_script)
+void load_conf_variables(const std::string& get_command,
+                         sss::PenvMgr2& env,
+                         std::string& before_script,
+                         std::string& after_script,
+                         std::string& default_template)
+
 {
     std::string conf_path = get_command;
     sss::path::append(conf_path, tpl_conf_name);
@@ -349,6 +354,7 @@ void load_conf_variables(const std::string& get_command, sss::PenvMgr2& env, std
     std::cout << std::endl;
     penvIni.get("scripts", "before-script", before_script);
     penvIni.get("scripts", "after-script", after_script);
+    penvIni.get("default-template", "fname", default_template);
 }
 
 void gensketch_execute_script(sss::PenvMgr2& env, const std::string& script)
@@ -384,7 +390,7 @@ int main (int argc, char *argv[])
 
         std::string get_command;
         std::string target;
-        std::string dir = sss::path::getcwd();
+        std::string dir;
         std::map<std::string, std::string> cml_env_variables;
 
         int idx = 1;
@@ -443,6 +449,10 @@ int main (int argc, char *argv[])
             args4Penv.push_back(argv[idx++]);
         }
 
+        if (dir.empty()) {
+            dir = sss::path::getcwd();
+        }
+
         env.set("ARG_COUNT", sss::cast_string(args4Penv.size()));
         for (size_t i = 0; i < args4Penv.size(); ++i) {
             env.set("ARGV_" + sss::cast_string(i), args4Penv[i]);
@@ -475,9 +485,22 @@ int main (int argc, char *argv[])
         load_sorted_templates(get_command, sorted_tpl_path);
         std::string before_script;
         std::string after_script;
-        load_conf_variables(get_command, env, before_script, after_script);
+        std::string default_template;
+        load_conf_variables(get_command, env, before_script, after_script, default_template);
         for (const auto & i : cml_env_variables) {
             env.set(i.first, i.second);
+        }
+        if (!before_script.empty()) {
+            std::cout << VALUE_MSG(before_script) << std::endl;
+        }
+        if (!after_script.empty()) {
+            std::cout << VALUE_MSG(after_script) << std::endl;
+        }
+        if (!default_template.empty()) {
+            std::cout << VALUE_MSG(default_template) << std::endl;
+        }
+        if (!before_script.empty() || !after_script.empty() || !default_template.empty()) {
+            std::cout << std::endl;
         }
 
         // NOTE before-script 和 after-script的执行；
@@ -487,6 +510,7 @@ int main (int argc, char *argv[])
         // $s.env_name；所以，唯一可行的办法是，将其包装为${t.(``)}变量，再get_expr()；
         // 同时，忽略其执行结果。
         gensketch_execute_script(env, before_script);
+        std::string default_file;
 
         for (const auto & i : sorted_tpl_path) {
             std::string out_path = sss::path::append_copy(dir,
@@ -494,7 +518,7 @@ int main (int argc, char *argv[])
 
             std::string target_rel_path = sss::path::relative_to(out_path, dir);
 
-            if (*i.first.rbegin() == sss::path::sp_char) {
+            if (sss::path::is_end_with_spchar(i.first)) {
                 gensketch_mkpath(out_path, target_rel_path, i.second);
                 continue;
             }
@@ -503,6 +527,16 @@ int main (int argc, char *argv[])
             if (sss::path::suffix(out_path) == ".tpl") {
                 using_template = true;
                 out_path = sss::path::no_suffix(out_path);
+            }
+
+            if (default_template.empty() && default_file.empty()) {
+                default_file = out_path;
+            }
+            std::string tpl_path = sss::path::append_copy(get_command, i.first);
+            if (!default_template.empty()) {
+                if (tpl_path == sss::path::append_copy(get_command, default_template)) {
+                    default_file = out_path;
+                }
             }
 
             // NOTE TODO
@@ -518,7 +552,6 @@ int main (int argc, char *argv[])
 
             std::cout << i.second << " " << target_rel_path << " <- " << (using_template ? "template" : "copy") << std::endl;
 
-            std::string tpl_path = sss::path::append_copy(get_command, i.first);
             sss::path::file2string(tpl_path, content);
             std::ofstream ofs(out_path.c_str(), std::ios_base::out | std::ios_base::binary);
             if (!ofs.good()) {
@@ -540,6 +573,10 @@ int main (int argc, char *argv[])
         }
 
         gensketch_execute_script(env, after_script);
+
+        if (!default_file.empty()) {
+            std::cout << "default-file=" << default_file << std::endl;
+        }
 
         return EXIT_SUCCESS;
     }
