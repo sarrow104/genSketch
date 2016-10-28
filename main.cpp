@@ -485,7 +485,7 @@ int main (int argc, char *argv[])
         load_sorted_templates(get_command, sorted_tpl_path);
         std::string before_script;
         std::string after_script;
-        std::string default_template;
+        std::string default_template; // NOTE 应用template工程之后，在vim中应该预览/编辑的文件，所对应的模板文件路径。
         load_conf_variables(get_command, env, before_script, after_script, default_template);
         for (const auto & i : cml_env_variables) {
             env.set(i.first, i.second);
@@ -510,7 +510,7 @@ int main (int argc, char *argv[])
         // $s.env_name；所以，唯一可行的办法是，将其包装为${t.(``)}变量，再get_expr()；
         // 同时，忽略其执行结果。
         gensketch_execute_script(env, before_script);
-        std::string default_file;
+        std::string default_file; // NOTE 应用template工程之后，在vim中应该预览/编辑的文件路径。
 
         for (const auto & i : sorted_tpl_path) {
             std::string out_path = sss::path::append_copy(dir,
