@@ -30,7 +30,7 @@ gprof:
 	@cd Gprof && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Gprof .. && make
 
 run:
-	@${Target}
+	@./${Target}
 
 run-debug:
 	@gdb ./${Target}D
