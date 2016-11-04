@@ -12,6 +12,10 @@ ifeq ($(OS),Windows_NT)
   endif
 endif
 
+TARGET=${Target}
+TARGET_D = $(TARGET)D
+TARGET_G = $(TARGET)G
+
 # usage: make -verbose=1
 ifeq ($(verbose),1)
 	CMAKE_FLAGS+=-DCMAKE_VERBOSE_MAKEFILE=on
@@ -33,22 +37,22 @@ gprof:
 	@cd Gprof && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Gprof .. && make
 
 run:
-	@./${Target}
+	@./$(TARGET)
 
 run-debug:
-	@gdb ./${Target}D
+	@gdb ./$(TARGET_D)
 
 gprof-view: gprof
-	@if [ ! -f gmon.out ]; then ./${Target}G $(RUN_PARAMS); fi
-	@gprof -b --demangle ./${Target}G gmon.out | gprof2dot -s | xdot &
+	@if [ ! -f gmon.out ]; then ./$(TARGET_G) $(RUN_PARAMS); fi
+	@gprof -b --demangle ./$(TARGET_G) gmon.out | gprof2dot -s | xdot &
 
 # NOTE: perf.data need execute bin-pg with parameters!
 perf-view: gprof
-	@if [ ! -f perf.data ]; then perf record -g -- ./${Target}G $(RUN_PARAMS); fi
+	@if [ ! -f perf.data ]; then perf record -g -- ./$(TARGET_G) $(RUN_PARAMS); fi
 	@perf script | c++filt | gprof2dot -s -f perf | xdot &
 
 memcheck-valgrind: debug
-	@valgrind --tool=memcheck --leak-check=full --error-limit=no --show-leak-kinds=all ./${Target}D $(RUN_PARAMS)
+	@valgrind --tool=memcheck --leak-check=full --error-limit=no --show-leak-kinds=all ./$(TARGET_D) $(RUN_PARAMS)
 
 #valgrind --tool=memcheck --log-file=/home/trunk/valgrind_log_all --leak-check=full --error-limit=no --show-leak-kinds=all /opt/lim/bin/limserver
 #valgrind --leak-check=yes --trace-children=yes --show-reachable=yes --log-file=log program args
@@ -64,6 +68,9 @@ memcheck-valgrind: debug
 #	是否跟入子进程。当程序正常退出的时候valgrind自然会输出内存泄漏的信息。对于多线程可加可不加
 #--log-file=log
 #	输出检测的日志文件，不加会直接显示在shell中，valgrind会在log名后加.pid
+#--num-callers=N
+#	指定报告中调用栈的层数，这在定位和跟踪错误的时候会比较有用
+#! http://www.cnblogs.com/cobbliu/p/4423775.html
 
 install:
 	@cd Release && make install
