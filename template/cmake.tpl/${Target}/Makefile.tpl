@@ -28,7 +28,7 @@ release:
 	@mkdir -p Release
 	cd Release && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=~/bin .. && make
 
-debug:
+debug: 
 	@mkdir -p Debug
 	@cd Debug && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Debug .. && make
 
@@ -36,10 +36,10 @@ gprof:
 	@mkdir -p Gprof
 	@cd Gprof && cmake $(CMAKE_FLAGS) -DCMAKE_BUILD_TYPE=Gprof .. && make
 
-run:
+run: release
 	@./$(TARGET)
 
-run-debug:
+run-debug: debug
 	@gdb ./$(TARGET_D)
 
 gprof-view: gprof
