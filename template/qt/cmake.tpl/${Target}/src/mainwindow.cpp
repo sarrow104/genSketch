@@ -5,29 +5,41 @@
 #include <QKeySequence>
 #include <QMenu>
 #include <QToolBar>
+#include <QAction>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent)
 {
     this->setWindowTitle(tr("Main Window"));
 
-    openAction = new QAction(QIcon(":/images/doc-open"),
-                             tr("&Open..."),
-                             this);
+    actionOpen = new QAction(QIcon::fromTheme("document-open"), tr("&Open..."), this);
+    actionOpen->setShortcuts(QKeySequence::Open);
+    actionOpen->setStatusTip(tr("Open an existing file."));
+    connect(actionOpen, &QAction::triggered, this, &MainWindow::on_actionOpen_triggered);
 
-    openAction->setShortcuts(QKeySequence::Open);
-    openAction->setStatusTip(tr("Open an existing file."));
-    connect(openAction, &QAction::triggered, this, &MainWindow::open);
+    actionQuit = new QAction(QIcon::fromTheme("application-exit"), tr("&Quit"), this);
+    actionQuit->setShortcut(QKeySequence::Quit);
+    actionQuit->setToolTip(tr("Quit Application"));
+    connect(actionQuit, &QAction::triggered, this, &MainWindow::on_actionQuit_triggered);
 
     QMenu * file =  this->menuBar()->addMenu(tr("&File"));
-    file->addAction(openAction);
+    file->addAction(actionOpen);
+    file->addAction(actionQuit);
 
     QToolBar *toolBar = this->addToolBar(tr("&File"));
-    toolBar->addAction(openAction);
+    toolBar->addAction(actionOpen);
+    toolBar->addAction(actionQuit);
+
+    (void)this->statusBar();
 }
 
-void MainWindow::open()
+void MainWindow::on_actionOpen_triggered()
 {
     // TODO
+}
+
+void MainWindow::on_actionQuit_triggered()
+{
+    this->close();
 }
 

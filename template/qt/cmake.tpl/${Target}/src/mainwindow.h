@@ -2,7 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
-#include <QAction>
+class QAction;
 
 class MainWindow : public QMainWindow
 {
@@ -15,10 +15,12 @@ public:
 signals:
 
 public slots:
-    void open();
+    void on_actionOpen_triggered();
+    void on_actionQuit_triggered();
 
 private:
-    QAction * openAction;
+    QAction * actionOpen;
+    QAction * actionQuit;
 };
 
 #endif // MAINWINDOW_H
