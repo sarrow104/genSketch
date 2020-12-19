@@ -12,6 +12,7 @@
 #include <sss/regex/cregex.hpp>
 #include <sss/dosini/dosini.hpp>
 #include <sss/environ.hpp>
+#include <sss/config.hpp>
 
 #include <sss/util/PostionThrow.hpp>
 #include <sss/cygpath.hpp>
@@ -116,7 +117,53 @@ void help_msg()
     std::cout << std::string(80, '=') << "\n" << std::endl;
 
     std::cout
-        << "NOTE use file " << tpl_conf_name << ", " << tpl_order_name << " under xxx.tpl directory wisely!"
+        << tpl_conf_name
+        << "\t a dosini config file for specific template setting\n"
+        << "\n"
+        << "\t [env-variable]\n"
+        << "\t\t template author may put default PenvMgr variable assignment here;\n"
+        << "\t\t one line per setting\n"
+        << "\n"
+        << "\t [scripts]\n"
+        << "\t\t template user may specific shell script calling schema here\n"
+        << "\t\t before-script for `before` trigger\n"
+        << "\t\t after-script for `after` trigger\n"
+        << "\n"
+        << "\t [default-template]\n"
+        << "\t\t only one predefined variable `fname` for editer like vim to edit with\n"
+        << "\t\t after the current template task has been finished\n"
+        << "\n"
+        << std::endl;
+
+    std::cout << std::string(80, '-') << "\n" << std::endl;
+
+    std::cout
+        << tpl_order_name
+        << "\t specific the template file action appling order\n"
+        << "\n"
+        << "\t> [order-number] template-file-name\n"
+        << "\t\t NOTE if no file list in this file, then all template file, \n"
+        << "\t\t will be apply as the order it's iterator order by file-system.\n"
+        << "\t\t NOTE\n"
+        << "\t\t 1. the default priority order-number is 50\n"
+        << "\t\t 2. the less order-number, the earlier will by apply to create\n"
+        << "\n"
+        << std::endl;
+
+    std::cout << std::string(80, '-') << "\n" << std::endl;
+
+    std::cout
+        << tpl_help_name
+        << "\t specific the template setting user decription\n"
+        << "\n"
+        << "\t\t NOTE this is just a markdown file\n"
+        << "\n"
+        << std::endl;
+
+    std::cout << std::string(80, '=') << "\n" << std::endl;
+
+    std::cout
+        << "NOTE use file " << tpl_conf_name << ", " << tpl_order_name << ", " << tpl_help_name << " under xxx.tpl directory wisely!"
         << std::endl;
 }
 
@@ -148,7 +195,7 @@ void genTplFile(const std::string& bin_dir, const std::string& name, const std::
 
 void edit_tpl(const std::string& tmpl_dir, const std::string& command)
 {
-    std::string full {tmpl_dir};
+    std::string full(tmpl_dir);
     sss::path::append(full, command + ".tpl");
     switch (sss::path::file_exists(full)) {
     case sss::PATH_NOT_EXIST:
@@ -159,7 +206,7 @@ void edit_tpl(const std::string& tmpl_dir, const std::string& command)
             genTplFile(bin_dir, tpl_help_name, full);
             genTplFile(bin_dir, tpl_order_name, full);
         }
-        // fall-throw:
+        SSS_FALLTHROUGH;
 
     case sss::PATH_TO_DIRECTORY:
         std::cout << full;
@@ -208,7 +255,7 @@ void edit_tpl(const std::string& tmpl_dir, const std::string& command, const std
 
 void help_tpl(const std::string& tmpl_dir, const std::string& command)
 {
-    std::string full {tmpl_dir};
+    std::string full (tmpl_dir);
     sss::path::append(full, command + ".tpl");
     if (sss::path::file_exists(full) != sss::PATH_TO_DIRECTORY) {
         std::cout
