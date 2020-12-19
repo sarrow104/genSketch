@@ -1,0 +1,8 @@
+{
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    // ${workspaceRoot}指工作区根目录
+    "cmake.buildDirectory": "${workspaceRoot}/build",
+    // ccls的设置似乎只能选择相对根目录的位置
+	// for compile_commands.json location
+    "ccls.misc.compilationDatabaseDirectory": "build"
+}
