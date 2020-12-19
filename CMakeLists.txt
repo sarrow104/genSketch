@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.6)
 add_definitions(-std=c++11)
-add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors)
+add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors -Werror=return-type)
 
 set(target_name "genSketch")
 set(libsss "sss")
