@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 2.6)
-add_definitions(-std=c++11)
-add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors)
+add_definitions(-std=c++14)
+add_definitions(-W -fexceptions -Wunused-variable -Wfatal-errors -Werror=return-type)
 
 set(target_name "${Target}")
+
+set(sss "sss")
+set(ss1x "ss1x")
+
 if ("$${CMAKE_BUILD_TYPE}" STREQUAL "Release")
  add_definitions(-DNODEBUG -O2 -s)
 elseif ("$${CMAKE_BUILD_TYPE}" STREQUAL "Gprof")
@@ -12,6 +16,8 @@ elseif ("$${CMAKE_BUILD_TYPE}" STREQUAL "Gprof")
 else()
  set(target_name "$${target_name}D")
  add_definitions(-O0 -g -ggdb)
+ set(sss "sssD")
+ set(ss1x "ss1xD")
 endif()
 
 project($${target_name})
@@ -32,5 +38,5 @@ if ("$${CMAKE_BUILD_TYPE}" STREQUAL "Release")
 endif()
 #include_directories(~/extra/sss/include)
 #link_directories(~/extra/sss/lib/)
-target_link_libraries($${target_name} sss) # must below the bin target definition!
+target_link_libraries($${target_name} ${sss}) # must below the bin target definition!
 
