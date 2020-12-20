@@ -13,6 +13,7 @@
 #include <sss/dosini/dosini.hpp>
 #include <sss/environ.hpp>
 #include <sss/config.hpp>
+#include <sss/debug/value_msg.hpp>
 
 #include <sss/util/PostionThrow.hpp>
 #include <sss/cygpath.hpp>
@@ -22,8 +23,6 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-
-#define VALUE_MSG(a) (#a) << " = " << (a)
 
 bool is_fake_shell()
 {
@@ -322,7 +321,7 @@ void load_sorted_templates(const std::string& get_command,
 
     std::string order_file_path = sss::path::append_copy(get_command, tpl_order_name);
     if (sss::path::filereadable(order_file_path)) {
-        std::cout << VALUE_MSG(order_file_path) << std::endl;
+        std::cout << SSS_VALUE_MSG(order_file_path) << std::endl;
         std::ifstream order_file(order_file_path);
         std::string line;
         sss::regex::CRegex reg_order(R"(^0*([0-9]+)\s+(.+)$)");
@@ -385,7 +384,7 @@ void load_conf_variables(const std::string& get_command,
         return;
     }
 
-    std::cout << VALUE_MSG(conf_path) << std::endl;
+    std::cout << SSS_VALUE_MSG(conf_path) << std::endl;
     sss::dosini penvIni(conf_path);
 
     // 同名变量，只能有唯一定义式；
@@ -483,15 +482,15 @@ int main (int argc, char *argv[])
 
             if (get_command.empty()) {
                 get_command = argv[idx];
-                std::cout << VALUE_MSG(get_command) << std::endl;
+                std::cout << SSS_VALUE_MSG(get_command) << std::endl;
             }
             else if (target.empty()) {
                 target = argv[idx];
-                std::cout << VALUE_MSG(target) << std::endl;
+                std::cout << SSS_VALUE_MSG(target) << std::endl;
             }
             else if (dir.empty()) {
                 dir = sss::path::full_of_copy(argv[idx]);
-                std::cout << VALUE_MSG(dir) << std::endl;
+                std::cout << SSS_VALUE_MSG(dir) << std::endl;
             }
             args4Penv.push_back(argv[idx++]);
         }
@@ -526,7 +525,7 @@ int main (int argc, char *argv[])
         env.set("Target", target);
         env.set("timestamp", sss::time::strftime("%Y%m%d"));
 
-        std::cout << VALUE_MSG(get_command) << std::endl;
+        std::cout << SSS_VALUE_MSG(get_command) << std::endl;
 
         std::vector<std::pair<std::string, order_t> > sorted_tpl_path;
         load_sorted_templates(get_command, sorted_tpl_path);
@@ -538,13 +537,13 @@ int main (int argc, char *argv[])
             env.set(i.first, i.second);
         }
         if (!before_script.empty()) {
-            std::cout << VALUE_MSG(before_script) << std::endl;
+            std::cout << SSS_VALUE_MSG(before_script) << std::endl;
         }
         if (!after_script.empty()) {
-            std::cout << VALUE_MSG(after_script) << std::endl;
+            std::cout << SSS_VALUE_MSG(after_script) << std::endl;
         }
         if (!default_template.empty()) {
-            std::cout << VALUE_MSG(default_template) << std::endl;
+            std::cout << SSS_VALUE_MSG(default_template) << std::endl;
         }
         if (!before_script.empty() || !after_script.empty() || !default_template.empty()) {
             std::cout << std::endl;
@@ -580,6 +579,8 @@ int main (int argc, char *argv[])
                 default_file = out_path;
             }
             std::string tpl_path = sss::path::append_copy(get_command, i.first);
+            //std::cout << SSS_VALUE_MSG(tpl_path) << std::endl;
+
             if (!default_template.empty()) {
                 if (tpl_path == sss::path::append_copy(get_command, default_template)) {
                     default_file = out_path;
