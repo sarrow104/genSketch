@@ -15,7 +15,7 @@ doc:
 	go doc ${Target}
 
 vim:
-	. ./addgopath.sh && gvim src/${Target}/${Target}.go
+	. ./addgopath.sh ; gvim src/${Target}/${Target}.go
 
 vscode:
-	. ./addgopath.sh && code .
+	. ./addgopath.sh ; code .
