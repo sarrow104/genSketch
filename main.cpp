@@ -426,9 +426,6 @@ void gensketch_mkpath(const std::string& out_path, const std::string& msg_path, 
 int main (int argc, char *argv[])
 {
     try {
-        (void) argc;
-        (void) argv;
-
         sss::PenvMgr2 env;
         env.set("tmpl_dir",
                 sss::path::append_copy(sss::path::dirname(sss::path::getbin()),
