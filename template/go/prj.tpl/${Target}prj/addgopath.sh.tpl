@@ -1,1 +1,1 @@
-export GOPATH=${t.(`pwd`)}
+export GOPATH="${t.(`pwd`)}:$$GOPATH"
